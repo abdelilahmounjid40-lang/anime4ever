@@ -1,0 +1,140 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: animes
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required)
+    //   - description: string (required)
+    //   - thumbnail: string (required)
+    //   - coverImage: string (optional)
+    //   - releaseYear: number (optional)
+    //   - status: string (optional)
+    //   - createdAt: string (required, ISO date)
+    //   - updatedAt: string (optional, ISO date)
+    //
+    // Collection: episodes
+    // Document ID: auto-generated
+    // Fields:
+    //   - animeId: string (required)
+    //   - title: string (required)
+    //   - episodeNumber: number (required)
+    //   - description: string (optional)
+    //   - videoUrl: string (required)
+    //   - thumbnail: string (optional)
+    //   - createdAt: string (required, ISO date)
+    //   - updatedAt: string (optional, ISO date)
+    //
+    // Collection: ads
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required)
+    //   - type: string (required, 'video', 'image', 'iframe')
+    //   - url: string (required)
+    //   - targetUrl: string (optional)
+    //   - active: boolean (required)
+    //   - createdAt: string (required, ISO date)
+    //   - updatedAt: string (optional, ISO date)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == "abdelilahmounjid40@gmail.com" && request.auth.token.email_verified == true;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidAnime() {
+      let data = request.resource.data;
+      return hasRequiredFields(['title', 'description', 'thumbnail', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 5000 &&
+             data.thumbnail is string && data.thumbnail.size() > 0 && data.thumbnail.size() <= 1000 &&
+             isValidOptionalString('coverImage', 0, 1000) &&
+             (!( 'releaseYear' in data ) || data.releaseYear is number) &&
+             (!( 'status' in data ) || data.status in ['Ongoing', 'Completed']) &&
+             isValidDateString(data.createdAt) &&
+             (!( 'updatedAt' in data ) || isValidDateString(data.updatedAt));
+    }
+
+    function isValidEpisode() {
+      let data = request.resource.data;
+      return hasRequiredFields(['animeId', 'title', 'episodeNumber', 'videoUrl', 'createdAt']) &&
+             data.animeId is string && data.animeId.size() > 0 && data.animeId.size() <= 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.episodeNumber is number && data.episodeNumber >= 0 &&
+             data.videoUrl is string && data.videoUrl.size() > 0 && data.videoUrl.size() <= 2000 &&
+             isValidOptionalString('description', 0, 5000) &&
+             isValidOptionalString('thumbnail', 0, 1000) &&
+             isValidDateString(data.createdAt) &&
+             (!( 'updatedAt' in data ) || isValidDateString(data.updatedAt));
+    }
+
+    function isValidAd() {
+      let data = request.resource.data;
+      return hasRequiredFields(['title', 'type', 'url', 'active', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.type in ['video', 'image', 'iframe'] &&
+             data.url is string && data.url.size() > 0 && data.url.size() <= 2000 &&
+             data.active is bool &&
+             isValidOptionalString('targetUrl', 0, 2000) &&
+             isValidDateString(data.createdAt) &&
+             (!( 'updatedAt' in data ) || isValidDateString(data.updatedAt));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /animes/{animeId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidAnime();
+      allow update: if isAdmin() && isValidAnime() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /episodes/{episodeId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidEpisode();
+      allow update: if isAdmin() && isValidEpisode() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /ads/{adId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidAd();
+      allow update: if isAdmin() && isValidAd() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+  }
+}

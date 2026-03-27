@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Anime": {
+      "title": "Anime",
+      "description": "Represents an anime series or movie.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the anime" },
+        "description": { "type": "string", "description": "Synopsis of the anime" },
+        "thumbnail": { "type": "string", "description": "Thumbnail image URL" },
+        "coverImage": { "type": "string", "description": "Cover image URL" },
+        "releaseYear": { "type": "number", "description": "Year of release" },
+        "status": { "type": "string", "enum": ["Ongoing", "Completed"], "description": "Status of the anime" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["title", "description", "thumbnail", "createdAt"]
+    },
+    "Episode": {
+      "title": "Episode",
+      "description": "Represents a single episode of an anime.",
+      "type": "object",
+      "properties": {
+        "animeId": { "type": "string", "description": "ID of the parent anime" },
+        "title": { "type": "string", "description": "Episode title" },
+        "episodeNumber": { "type": "number", "description": "Episode number" },
+        "description": { "type": "string", "description": "Episode description" },
+        "videoUrl": { "type": "string", "description": "URL of the video iframe or source" },
+        "thumbnail": { "type": "string", "description": "Episode thumbnail URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["animeId", "title", "episodeNumber", "videoUrl", "createdAt"]
+    },
+    "Ad": {
+      "title": "Ad",
+      "description": "Represents an advertisement.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Ad title" },
+        "type": { "type": "string", "enum": ["video", "image", "iframe"], "description": "Type of the ad" },
+        "url": { "type": "string", "description": "Media URL for the ad" },
+        "targetUrl": { "type": "string", "description": "Click-through URL" },
+        "active": { "type": "boolean", "description": "Whether the ad is currently active" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["title", "type", "url", "active", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/animes/{animeId}": {
+      "schema": { "$ref": "#/entities/Anime" },
+      "description": "Collection of all animes"
+    },
+    "/episodes/{episodeId}": {
+      "schema": { "$ref": "#/entities/Episode" },
+      "description": "Collection of all episodes"
+    },
+    "/ads/{adId}": {
+      "schema": { "$ref": "#/entities/Ad" },
+      "description": "Collection of all ads"
+    }
+  }
+}
